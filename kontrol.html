@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kontrol PMT & PMS - Gardu Induk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .btn-open {
+        @apply bg-green-500 text-white px-4 py-2 rounded-lg shadow-md transition transform hover:shadow-xl hover:-translate-y-0.5 focus:outline-none;
+      }
+      .btn-close {
+        @apply bg-red-500 text-white px-4 py-2 rounded-lg shadow-md transition transform hover:shadow-xl hover:-translate-y-0.5 focus:outline-none;
+      }
+      .log-scroll {
+        scrollbar-width: thin;
+      }
+      .toast-enter {
+        transform: translateY(12px);
+        opacity: 0;
+      }
+      .toast-enter-active {
+        transform: translateY(0);
+        opacity: 1;
+        transition: all 300ms ease;
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen font-sans text-slate-800">
+    <!-- Navbar -->
+    <header class="bg-blue-700 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between text-white">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-10 h-10 bg-yellow-400 rounded-md flex items-center justify-center text-blue-800 font-bold">PLN</div>
+            <span class="text-lg font-semibold">PLN Gardu Induk</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6 ml-6 text-sm">
+            <a href="#" class="hover:text-yellow-300">Dashboard</a>
+            <a href="#" class="hover:text-yellow-300">Perangkat</a>
+            <a href="#" class="hover:text-yellow-300">Riwayat</a>
+          </nav>
+        </div>
+        <div>
+          <button id="loginBtn" class="bg-yellow-400 text-blue-800 px-3 py-1 rounded-md font-medium hover:bg-yellow-300 transition">Login</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Controls + Indicators -->
+      <section class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border border-blue-200">
+        <h2 class="text-xl font-semibold text-blue-700 mb-4">Kontrol PMT / PMS</h2>
+        <div class="space-y-4">
+          <!-- PMT card -->
+          <div class="p-4 border border-blue-100 rounded-lg bg-blue-50">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-blue-800">PMT - Pemutus Trafo 1</h3>
+                <p class="text-sm text-blue-600">Lokasi: Gardu Induk A</p>
+              </div>
+              <div id="status-pmt1" class="text-sm font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700">Status: Idle</div>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+              <button data-device="PMT-1" data-action="OPEN" class="btn-open" onclick="executeAction(event)">Open</button>
+              <button data-device="PMT-1" data-action="CLOSE" class="btn-close" onclick="executeAction(event)">Close</button>
+            </div>
+          </div>
+
+          <!-- PMS card -->
+          <div class="p-4 border border-blue-100 rounded-lg bg-blue-50">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-medium text-blue-800">PMS - Pemutus Sekunder 2</h3>
+                <p class="text-sm text-blue-600">Lokasi: Gardu Induk B</p>
+              </div>
+              <div id="status-pms2" class="text-sm font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700">Status: Idle</div>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+              <button data-device="PMS-2" data-action="OPEN" class="btn-open" onclick="executeAction(event)">Open</button>
+              <button data-device="PMS-2" data-action="CLOSE" class="btn-close" onclick="executeAction(event)">Close</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="text-sm font-medium text-blue-700 mb-2">Indikator Eksekusi Terakhir</h4>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div id="indicator-last-device" class="p-3 rounded-lg bg-blue-50 border border-blue-100">Perangkat: -</div>
+            <div id="indicator-last-action" class="p-3 rounded-lg bg-blue-50 border border-blue-100">Aksi: -</div>
+            <div id="indicator-last-user" class="p-3 rounded-lg bg-blue-50 border border-blue-100">User: -</div>
+            <div id="indicator-last-time" class="p-3 rounded-lg bg-blue-50 border border-blue-100">Waktu: -</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Log Section -->
+      <section class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-blue-200 flex flex-col">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-blue-700">Log Aktivitas</h2>
+          <span class="text-sm text-blue-500">Riwayat manuver PMT & PMS</span>
+        </div>
+        <div class="mt-4 flex-1 overflow-auto log-scroll border rounded-lg p-4 bg-blue-50">
+          <ul id="activityLog" class="space-y-3"></ul>
+        </div>
+        <div class="mt-4 flex items-center justify-end gap-3">
+          <button onclick="clearLog()" class="text-sm px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200">Clear Log</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="toastContainer" class="fixed right-6 bottom-6 z-50 space-y-3"></div>
+
+    <div id="loginModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-40">
+      <div class="bg-white rounded-2xl p-6 w-96 shadow-xl">
+        <h3 class="text-lg font-semibold mb-3 text-blue-700">Login Operator</h3>
+        <input id="username" placeholder="Nama pengguna" class="w-full mb-3 p-2 border rounded focus:ring-2 focus:ring-blue-400" />
+        <input id="userrole" placeholder="Role (mis. operator)" class="w-full mb-4 p-2 border rounded focus:ring-2 focus:ring-blue-400" />
+        <div class="flex justify-end gap-2">
+          <button onclick="closeLogin()" class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button onclick="doLogin()" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentUser = { name: "Anonymous" };
+
+      document.getElementById("loginBtn").addEventListener("click", () => {
+        document.getElementById("loginModal").classList.remove("hidden");
+        document.getElementById("loginModal").classList.add("flex");
+      });
+
+      function closeLogin() {
+        document.getElementById("loginModal").classList.add("hidden");
+        document.getElementById("loginModal").classList.remove("flex");
+      }
+
+      function doLogin() {
+        const name = document.getElementById("username").value || "Operator";
+        const role = document.getElementById("userrole").value || "operator";
+        currentUser = { name, role };
+        closeLogin();
+        showToast("Login berhasil: " + name);
+      }
+
+      function executeAction(e) {
+        const btn = e.currentTarget;
+        const device = btn.getAttribute("data-device");
+        const action = btn.getAttribute("data-action");
+        const timestamp = new Date().toLocaleString();
+
+        document.getElementById("indicator-last-device").textContent = "Perangkat: " + device;
+        document.getElementById("indicator-last-action").textContent = "Aksi: " + action;
+        document.getElementById("indicator-last-user").textContent = "User: " + (currentUser.name || "Anonymous");
+        document.getElementById("indicator-last-time").textContent = "Waktu: " + timestamp;
+
+        const statusId = device.includes("PMT") ? "status-pmt1" : "status-pms2";
+        const statusEl = document.getElementById(statusId);
+        statusEl.textContent = "Status: " + action;
+        statusEl.classList.remove("bg-slate-100", "bg-green-100", "bg-red-100");
+        statusEl.classList.add(action === "OPEN" ? "bg-green-100" : "bg-red-100");
+
+        addLogEntry({ device, action, user: currentUser.name || "Anonymous", time: timestamp });
+        showToast(device + " -> " + action + " oleh " + (currentUser.name || "Anonymous"));
+      }
+
+      function addLogEntry({ device, action, user, time }) {
+        const ul = document.getElementById("activityLog");
+        const li = document.createElement("li");
+        li.className = "p-3 bg-white border border-blue-100 rounded-lg shadow flex items-start justify-between";
+        li.innerHTML = `
+        <div>
+          <div class="text-sm font-semibold text-blue-700">${device} — <span class="text-xs font-normal text-blue-500">${action}</span></div>
+          <div class="text-xs text-slate-500">oleh <span class="font-medium">${user}</span> — ${time}</div>
+        </div>
+        <div class="text-sm">
+          <span class="px-2 py-1 rounded text-xs font-medium ${action === "OPEN" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}">${action}</span>
+        </div>
+      `;
+        ul.prepend(li);
+      }
+
+      function clearLog() {
+        document.getElementById("activityLog").innerHTML = "";
+        showToast("Log aktivitas dibersihkan");
+      }
+
+      function showToast(message) {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = "p-3 rounded-lg shadow-md bg-blue-600 text-white border border-blue-400 max-w-xs animate-fadeIn";
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+
+      addLogEntry({ device: "PMT-1", action: "OPEN", user: "Admin", time: new Date().toLocaleString() });
+    </script>
+  </body>
+</html>

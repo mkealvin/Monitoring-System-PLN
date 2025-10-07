@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PLN Monitoring v5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-blue-50 dark:bg-gray-900 min-h-screen font-sans text-gray-800 dark:text-gray-100 transition-colors duration-500">
+    <!-- HEADER -->
+    <header class="bg-gradient-to-r from-blue-700 to-blue-600 dark:from-gray-800 dark:to-gray-700 text-white shadow-md py-4 px-6 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white text-blue-700 dark:bg-gray-100 font-bold rounded-full w-10 h-10 flex items-center justify-center text-lg shadow-inner">⚡</div>
+        <h1 class="text-2xl font-semibold tracking-wide">PLN Monitoring System</h1>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div id="status-indicator" class="flex items-center bg-green-600 px-3 py-1 rounded-full text-sm font-medium shadow-md"><span class="w-2.5 h-2.5 bg-green-300 rounded-full mr-2"></span> Normal</div>
+        <div class="text-sm text-blue-100 italic text-right" id="header-time">--</div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="max-w-7xl mx-auto mt-10 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700">
+        <h2 class="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-6">Status Gangguan Sistem</h2>
+
+        <!-- DATA GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-blue-100 dark:bg-gray-700 rounded-xl p-4 text-center shadow-inner">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Nilai Arus</p>
+            <h3 id="current-value" class="text-3xl font-bold text-blue-900 dark:text-blue-200 mt-2">0.00 A</h3>
+          </div>
+
+          <div class="bg-blue-100 dark:bg-gray-700 rounded-xl p-4 text-center shadow-inner">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Fasa Terganggu</p>
+            <h3 id="phase-fault" class="text-2xl font-semibold text-blue-900 dark:text-blue-200 mt-2">-</h3>
+          </div>
+
+          <div class="bg-blue-100 dark:bg-gray-700 rounded-xl p-4 text-center shadow-inner">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Bay Terganggu</p>
+            <h3 id="bay-fault" class="text-2xl font-semibold text-blue-900 dark:text-blue-200 mt-2">-</h3>
+          </div>
+
+          <div class="bg-blue-100 dark:bg-gray-700 rounded-xl p-4 text-center shadow-inner">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Tanggal & Waktu</p>
+            <h3 id="timestamp" class="text-lg font-semibold text-blue-900 dark:text-blue-200 mt-2">--:--:--</h3>
+          </div>
+        </div>
+
+        <!-- GRAFIK (DENGAN TOGGLE) -->
+        <div class="bg-blue-50 dark:bg-gray-900 p-4 rounded-xl mb-8 shadow-inner transition-all duration-500">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-semibold text-blue-700 dark:text-blue-300">Grafik Arus Real-Time</h3>
+            <div class="flex items-center gap-3">
+              <span id="chart-status" class="text-sm text-gray-500 italic">⏸ Nonaktif</span>
+              <button id="toggle-chart" class="text-blue-600 dark:text-blue-300 text-sm hover:underline font-medium">⬇️ Sembunyikan Grafik</button>
+            </div>
+          </div>
+          <div id="chart-container" class="transition-all duration-500 overflow-hidden">
+            <canvas id="currentChart" height="120"></canvas>
+          </div>
+        </div>
+
+        <!-- LOG -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- LOG AKTIVITAS -->
+          <div>
+            <h3 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3">Log Aktivitas</h3>
+            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg shadow-inner p-4 h-64 overflow-y-auto border border-blue-100 dark:border-gray-700">
+              <ul id="log-list" class="text-sm space-y-2 text-gray-700 dark:text-gray-200">
+                <li class="text-gray-400 italic">Menunggu data sensor...</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- LOG GANGGUAN -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">Log Gangguan</h3>
+              <button id="reset-fault" class="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md shadow">Reset Log</button>
+            </div>
+            <div class="bg-red-50 dark:bg-gray-900 rounded-lg shadow-inner p-4 h-64 overflow-y-auto border border-red-200 dark:border-gray-700">
+              <ul id="fault-log" class="text-sm space-y-2 text-red-700 dark:text-red-400">
+                <li class="text-gray-400 italic">Belum ada gangguan...</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- POPUP -->
+    <div id="popup-container" class="fixed bottom-4 right-4 flex flex-col space-y-3 z-50"></div>
+
+    <footer class="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 mb-4">© 2025 PLN Monitoring — Dibuat dengan ⚙️ & TailwindCSS</footer>
+
+    <!-- SCRIPT -->
+    <script>
+      const currentValue = document.getElementById("current-value");
+      const phaseFault = document.getElementById("phase-fault");
+      const bayFault = document.getElementById("bay-fault");
+      const timestamp = document.getElementById("timestamp");
+      const headerTime = document.getElementById("header-time");
+      const logList = document.getElementById("log-list");
+      const faultLog = document.getElementById("fault-log");
+      const popupContainer = document.getElementById("popup-container");
+      const resetButton = document.getElementById("reset-fault");
+      const chartStatus = document.getElementById("chart-status");
+      const statusIndicator = document.getElementById("status-indicator");
+      const toggleChart = document.getElementById("toggle-chart");
+      const chartContainer = document.getElementById("chart-container");
+      const phases = ["R", "S", "T"];
+      const bays = ["Bay 1", "Bay 2", "Bay 3", "Bay 4"];
+      const logKey = "pln_log_v5";
+      let chartVisible = true;
+
+      function getDateTimeString() {
+        const now = new Date();
+        const hari = now.toLocaleDateString("id-ID", { weekday: "long" });
+        const tanggal = now.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
+        const waktu = now.toLocaleTimeString("id-ID", { hour12: false });
+        return `${hari}, ${tanggal} • ${waktu}`;
+      }
+
+      function updateTime() {
+        const str = getDateTimeString();
+        timestamp.textContent = str;
+        headerTime.textContent = str;
+      }
+      setInterval(updateTime, 1000);
+      updateTime();
+
+      function updateTheme() {
+        const hour = new Date().getHours();
+        if (hour >= 18 || hour < 6) document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
+      }
+      updateTheme();
+      setInterval(updateTheme, 60000);
+
+      // Chart.js
+      const ctx = document.getElementById("currentChart").getContext("2d");
+      const chartData = {
+        labels: [],
+        datasets: [
+          {
+            label: "Arus (A)",
+            data: [],
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37,99,235,0.1)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+          },
+        ],
+      };
+      const currentChart = new Chart(ctx, {
+        type: "line",
+        data: chartData,
+        options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } },
+      });
+
+      function isMonitoringTime() {
+        const hour = new Date().getHours();
+        return (hour >= 5 && hour < 7) || (hour >= 19 && hour < 21);
+      }
+
+      function updateChartStatus() {
+        chartStatus.textContent = isMonitoringTime() ? "✅ Aktif (Realtime mode)" : "⏸ Nonaktif (di luar jam monitoring)";
+      }
+
+      // Toggle grafik
+      toggleChart.addEventListener("click", () => {
+        chartVisible = !chartVisible;
+        chartContainer.style.maxHeight = chartVisible ? "400px" : "0";
+        chartContainer.style.opacity = chartVisible ? "1" : "0";
+        toggleChart.textContent = chartVisible ? "⬇️ Sembunyikan Grafik" : "⬆️ Tampilkan Grafik";
+      });
+
+      // LOG SISTEM
+      function loadLogs() {
+        const data = JSON.parse(localStorage.getItem(logKey));
+        if (!data || new Date().toDateString() !== data.date) {
+          localStorage.setItem(logKey, JSON.stringify({ date: new Date().toDateString(), logs: [], faults: [] }));
+          return { logs: [], faults: [] };
+        }
+        data.logs.forEach((l) => appendLog(l, false));
+        data.faults.forEach((f) => appendFaultLog(f, false));
+        return data;
+      }
+
+      function saveLogs(logs, faults) {
+        localStorage.setItem(logKey, JSON.stringify({ date: new Date().toDateString(), logs, faults }));
+      }
+
+      let { logs, faults } = loadLogs();
+
+      function appendLog(text, save = true) {
+        if (logList.querySelector(".italic")) logList.innerHTML = "";
+        const li = document.createElement("li");
+        li.innerHTML = text;
+        logList.prepend(li);
+        if (save) {
+          logs.unshift(text);
+          if (logs.length > 50) logs.pop();
+          saveLogs(logs, faults);
+        }
+      }
+
+      function appendFaultLog(text, save = true) {
+        if (faultLog.querySelector(".italic")) faultLog.innerHTML = "";
+        const li = document.createElement("li");
+        li.innerHTML = text;
+        faultLog.prepend(li);
+        if (save) {
+          faults.unshift(text);
+          if (faults.length > 50) faults.pop();
+          saveLogs(logs, faults);
+        }
+      }
+
+      function updateSensorData() {
+        const arus = (Math.random() * 15).toFixed(2);
+        const phase = phases[Math.floor(Math.random() * phases.length)];
+        const bay = bays[Math.floor(Math.random() * bays.length)];
+        const timeStr = getDateTimeString();
+        const isFault = arus > 10;
+
+        currentValue.textContent = `${arus} A`;
+        phaseFault.textContent = isFault ? phase : "-";
+        bayFault.textContent = isFault ? bay : "-";
+
+        if (isMonitoringTime() && chartVisible) {
+          currentChart.data.labels.push(new Date().toLocaleTimeString());
+          currentChart.data.datasets[0].data.push(arus);
+          if (currentChart.data.labels.length > 20) {
+            currentChart.data.labels.shift();
+            currentChart.data.datasets[0].data.shift();
+          }
+          currentChart.update();
+        }
+
+        updateChartStatus();
+        updateStatus(isFault);
+
+        const logText = `[${timeStr}] ${isFault ? "<span class='text-red-600 font-semibold'>Gangguan terdeteksi!</span>" : "Pembacaan normal"} (Arus: ${arus} A)`;
+        appendLog(logText);
+
+        if (isFault) {
+          const faultText = `<span class="font-semibold text-red-600">[${timeStr}] Gangguan!</span> — Fasa: <b>${phase}</b>, Bay: <b>${bay}</b>, Arus: ${arus} A`;
+          appendFaultLog(faultText);
+          showPopup(phase, bay, arus, timeStr);
+        }
+      }
+
+      function updateStatus(isFault) {
+        if (isFault) {
+          statusIndicator.className = "flex items-center bg-red-600 px-3 py-1 rounded-full text-sm font-medium shadow-md";
+          statusIndicator.innerHTML = '<span class="w-2.5 h-2.5 bg-red-300 rounded-full mr-2"></span> Gangguan';
+        } else {
+          statusIndicator.className = "flex items-center bg-green-600 px-3 py-1 rounded-full text-sm font-medium shadow-md";
+          statusIndicator.innerHTML = '<span class="w-2.5 h-2.5 bg-green-300 rounded-full mr-2"></span> Normal';
+        }
+      }
+
+      function showPopup(phase, bay, arus, time) {
+        const popup = document.createElement("div");
+        popup.className = "bg-white dark:bg-gray-800 border-l-4 border-red-500 shadow-lg rounded-lg px-4 py-3 text-sm text-gray-800 dark:text-gray-100 w-64 animate-slideIn";
+        popup.innerHTML = `<div class="font-semibold text-red-600 dark:text-red-400 mb-1">⚠️ Gangguan Terdeteksi!</div>
+          <div>Fasa: <b>${phase}</b></div>
+          <div>Bay: <b>${bay}</b></div>
+          <div>Arus: ${arus} A</div>
+          <div class="text-xs text-gray-500 mt-1">${time}</div>`;
+        popupContainer.prepend(popup);
+        setTimeout(() => {
+          popup.classList.add("opacity-0", "translate-x-4", "transition");
+          setTimeout(() => popup.remove(), 500);
+        }, 5000);
+      }
+
+      resetButton.addEventListener("click", () => {
+        faultLog.innerHTML = `<li class="text-gray-400 italic">Belum ada gangguan...</li>`;
+        popupContainer.innerHTML = "";
+        faults = [];
+        saveLogs(logs, faults);
+      });
+
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+      `;
+      document.head.appendChild(style);
+
+      setInterval(updateSensorData, 4000);
+    </script>
+  </body>
+</html>
